@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
+const Rating = require('../models/Rating'); // Make sure this path is correct
 
 // GET /products - fetch all products
 router.get('/', async (req, res) => {
   try {
-    const products = await Product.findAll();
+    const products = await Product.findAll({
+      include: [{ association: 'ratings' }] // Include ratings if needed
+    });
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: "Error fetching products" });
@@ -15,7 +18,9 @@ router.get('/', async (req, res) => {
 // GET /products/:id - fetch single product
 router.get('/:id', async (req, res) => {
   try {
-    const product = await Product.findByPk(req.params.id);
+    const product = await Product.findByPk(req.params.id, {
+      include: [{ association: 'ratings' }]
+    });
     if (product) {
       res.json(product);
     } else {
@@ -64,10 +69,26 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// POST /products/:id/addRating - add a rating (placeholder)
+// POST /products/:id/addRating - add a rating
 router.post('/:id/addRating', async (req, res) => {
-  // Here you could add logic to create a rating entry
-  res.json({ message: "Rating added (placeholder)" });
+  try {
+    // Ensure the product exists before adding a rating
+    const product = await Product.findByPk(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    // Get the rating data from the request body
+    const { rating, comment } = req.body;
+    // Create a new rating associated with the product
+    const newRating = await Rating.create({
+      rating,
+      comment,
+      productId: req.params.id
+    });
+    res.status(201).json(newRating);
+  } catch (error) {
+    res.status(500).json({ message: "Error adding rating", error: error.message });
+  }
 });
 
 module.exports = router;

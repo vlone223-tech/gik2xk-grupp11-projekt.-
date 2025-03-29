@@ -1,4 +1,3 @@
-// frontend/src/components/ProductList.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
@@ -45,17 +44,11 @@ function ProductList() {
                   <Link to={`/products/${product.id}`}>{product.name}</Link>
                 </h5>
                 <p className="card-text">{product.description}</p>
-                <p className="card-text"><strong>Price:</strong> ${product.price}</p>
+                <p className="card-text">
+                  <strong>Price:</strong> ${product.price}
+                </p>
                 <Rating value={3} readOnly size="small" />
               </div>
-              {/* Only show Edit if user is admin */}
-              {user && user.role === 'admin' && (
-                <div className="card-footer">
-                  <Link to={`/products/${product.id}/edit`} className="btn btn-primary btn-sm">
-                    Edit
-                  </Link>
-                </div>
-              )}
             </div>
           </div>
         ))}

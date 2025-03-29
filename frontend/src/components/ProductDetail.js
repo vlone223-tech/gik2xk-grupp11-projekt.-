@@ -1,48 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react'; 
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Rating } from '@mui/material';
-import { Button, Form } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
+import RatingForm from './RatingForm';
 
 function ProductDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
-  const [newRating, setNewRating] = useState(0);
-  const [comment, setComment] = useState('');
-
-  // Fetch product on mount
+  
+  // Retrieve user information from localStorage.
+  const storedUser = localStorage.getItem('user');
+  const user = storedUser ? JSON.parse(storedUser) : null;
+  
   useEffect(() => {
+    fetchProduct();
+  }, [id]);
+  
+  const fetchProduct = () => {
     axios.get(`http://localhost:3305/products/${id}`)
       .then(response => setProduct(response.data))
       .catch(error => console.error('Error fetching product:', error));
-  }, [id]);
-
-  // Calculate average rating
-  const averageRating = product?.ratings?.length
-    ? product.ratings.reduce((sum, r) => sum + r.rating, 0) / product.ratings.length
-    : 0;
-
-  // Handle submitting a rating
-  const handleRatingSubmit = () => {
-    axios.post(`http://localhost:3305/products/${id}/addRating`, { rating: newRating, comment })
-      .then(() => {
-        alert('Rating submitted!');
-        // Re-fetch the product to show the new rating
-        return axios.get(`http://localhost:3305/products/${id}`);
-      })
-      .then(response => setProduct(response.data))
-      .catch(error => console.error('Error submitting rating:', error));
   };
-
-  // Handle adding to cart
+  
+  // Calculate the average rating.
+  const averageRating = product?.ratings?.length
+    ? product.ratings.reduce((total, r) => total + r.rating, 0) / product.ratings.length
+    : 0;
+  
+  // Handle adding the product to the cart.
   const handleAddToCart = () => {
-    // Check if a user is logged in
-    const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
       alert('Please log in to add items to your cart!');
       return;
     }
-    // POST request to add product to the user's cart
     axios.post('http://localhost:3305/cart/addProduct', {
       userId: user.id,
       productId: id,
@@ -51,30 +43,49 @@ function ProductDetail() {
       .then(() => alert('Product added to cart!'))
       .catch(error => console.error('Error adding to cart:', error));
   };
+  
+  // Admin-only: Navigate to the edit page.
+  const handleEditProduct = () => {
+    navigate(`/products/${id}/edit`);
+  };
 
+  // Admin-only: Handle product deletion.
+  const handleDeleteProduct = () => {
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      axios.delete(`http://localhost:3305/products/${id}`)
+        .then(() => {
+          alert('Product deleted successfully.');
+          window.location.href = "/";
+        })
+        .catch(error => {
+          console.error('Error deleting product:', error);
+          alert('Error deleting product.');
+        });
+    }
+  };
+  
   if (!product) return <div>Loading...</div>;
-
+  
   return (
     <div className="card mb-4">
       {product.imageUrl && (
         <img
           src={product.imageUrl}
-          className="card-img-top"
           alt={product.name}
-          style={{ maxHeight: '400px', objectFit: 'cover' }}
+          className="card-img-top img-fluid"
+          style={{ maxHeight: '400px', objectFit: 'cover', width: '100%' }}
         />
       )}
       <div className="card-body">
         <h1 className="card-title">{product.name}</h1>
         <p className="card-text">{product.description}</p>
-        <p className="card-text">
-          <strong>Price:</strong> ${product.price}
-        </p>
-
+        <p className="card-text"><strong>Price:</strong> ${product.price}</p>
+  
         <h3>Average Rating: {averageRating.toFixed(1)}</h3>
         <Rating value={averageRating} precision={0.1} readOnly />
+  
         <hr />
-
+  
         <h4>Ratings:</h4>
         {product.ratings && product.ratings.length > 0 ? (
           product.ratings.map(r => (
@@ -86,31 +97,39 @@ function ProductDetail() {
         ) : (
           <p>No ratings yet.</p>
         )}
+  
         <hr />
-
-        <div className="mb-3">
-          <h4>Rate this product:</h4>
-          <Rating
-            value={newRating}
-            onChange={(e, newValue) => setNewRating(newValue)}
-          />
-          <Form.Group controlId="comment" className="mt-2">
-            <Form.Label>Comment (optional)</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={2}
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-            />
-          </Form.Group>
-          <Button variant="primary" className="mt-2" onClick={handleRatingSubmit}>
-            Submit Rating
-          </Button>
-        </div>
-
-        <Button variant="success" onClick={handleAddToCart}>
-          Add to Cart
-        </Button>
+  
+        {user && user.role === 'admin' ? (
+          // For admin users, display both the edit and delete buttons.
+          <div className="mt-3">
+            <Button
+              variant="warning"
+              onClick={handleEditProduct}
+              style={{ marginRight: '10px' }}
+            >
+              Edit Product
+            </Button>
+            <Button variant="danger" onClick={handleDeleteProduct}>
+              Delete Product
+            </Button>
+          </div>
+        ) : (
+          // For non-admin users, allow rating submission and adding to cart.
+          <>
+            <RatingForm onSubmit={({ rating, comment }) => {
+              axios.post(`http://localhost:3305/products/${id}/addRating`, { rating, comment })
+                .then(() => {
+                  alert('Rating submitted!');
+                  fetchProduct();
+                })
+                .catch(error => console.error('Error submitting rating:', error));
+            }} />
+            <Button variant="success" onClick={handleAddToCart}>
+              Add to Cart
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

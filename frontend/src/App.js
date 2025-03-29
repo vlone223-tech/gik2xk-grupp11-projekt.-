@@ -8,14 +8,13 @@ import ProductForm from './components/ProductForm';
 import Login from './components/Login';
 
 function App() {
-  // Load user from localStorage (the user object returned by /login)
+  // Retrieve the logged-in user from localStorage.
   const storedUser = localStorage.getItem('user');
   const user = storedUser ? JSON.parse(storedUser) : null;
 
-  // Logout handler
+  // Handle user logout.
   const handleLogout = () => {
     localStorage.removeItem('user');
-    // Reload page to reflect logout state
     window.location.reload();
   };
 
@@ -24,10 +23,7 @@ function App() {
       {/* Navbar */}
       <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
         <div className="container">
-          {/* Brand */}
           <Link className="navbar-brand" to="/">Webshop</Link>
-
-          {/* Toggler for mobile view */}
           <button
             className="navbar-toggler"
             type="button"
@@ -36,45 +32,33 @@ function App() {
           >
             <span className="navbar-toggler-icon" />
           </button>
-
-          {/* Collapsible Menu */}
           <div className="collapse navbar-collapse" id="navbarSupportedContent">
             <ul className="navbar-nav me-auto">
-              {/* Everyone sees Products */}
               <li className="nav-item">
                 <Link className="nav-link" to="/">Products</Link>
               </li>
-
-              {/* Everyone sees Cart (bag icon) */}
               <li className="nav-item">
                 <Link className="nav-link" to="/cart">
                   <FaShoppingBag />
                 </Link>
               </li>
-
-              {/* Only Admin sees "New Product" */}
+              {/* Only admin users can create new products */}
               {user && user.role === 'admin' && (
                 <li className="nav-item">
                   <Link className="nav-link" to="/products/new">New Product</Link>
                 </li>
               )}
             </ul>
-
-            {/* Right side of navbar: user info or login */}
             <ul className="navbar-nav ms-auto align-items-center">
               {user ? (
                 <>
-                  {/* Show user’s role and name, e.g. "Admin: Abdiaziz" */}
                   <li className="nav-item me-3">
                     <span className="navbar-text text-white">
                       {user.role === 'admin' ? 'Admin' : 'User'}: {user.name}
                     </span>
                   </li>
                   <li className="nav-item">
-                    <button
-                      className="btn nav-link text-white"
-                      onClick={handleLogout}
-                    >
+                    <button className="btn nav-link text-white" onClick={handleLogout}>
                       Logout
                     </button>
                   </li>
@@ -89,31 +73,21 @@ function App() {
         </div>
       </nav>
 
-      {/* Main Content Container */}
+      {/* Main content container */}
       <div className="container mt-4">
         <Routes>
-          {/* Public Routes */}
           <Route path="/" element={<ProductList />} />
           <Route path="/login" element={<Login />} />
           <Route path="/products/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
-
-          {/* Admin-Only Routes */}
-          <Route
-            path="/products/new"
-            element={
-              user && user.role === 'admin'
-                ? <ProductForm />
-                : <Navigate to="/" />
-            }
+          {/* Admin-only routes */}
+          <Route 
+            path="/products/new" 
+            element={user && user.role === 'admin' ? <ProductForm /> : <Navigate to="/" />} 
           />
-          <Route
-            path="/products/:id/edit"
-            element={
-              user && user.role === 'admin'
-                ? <ProductForm />
-                : <Navigate to="/" />
-            }
+          <Route 
+            path="/products/:id/edit" 
+            element={user && user.role === 'admin' ? <ProductForm /> : <Navigate to="/" />} 
           />
         </Routes>
       </div>
